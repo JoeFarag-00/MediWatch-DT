@@ -1,0 +1,1 @@
+#One script to recieve all current statuses
