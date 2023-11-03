@@ -1,1 +1,0 @@
-#Normal behaviors - Output [Eat, Sleep, Off bed]
