@@ -1,1 +1,0 @@
-#Gesture script = Output HELP
