@@ -54,7 +54,7 @@ class MainGUI:
         self.Main.title("Dashboard")
         self.Main.geometry(f"{1100}x{510}")
         self.Main.grid_columnconfigure(1, weight=1)
-        self.app_logo = customtkinter.CTkImage(light_image=Image.open("Assets\doctor.png"), size=(100, 100))
+        self.app_logo = customtkinter.CTkImage(light_image=Image.open("Assets/doctor.png"), size=(100, 100))
         self.sidebar_frame = customtkinter.CTkFrame(self.Main, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
@@ -102,7 +102,7 @@ class MainGUI:
         self.patient1_bg = customtkinter.CTkLabel(self.PPFrame1, image=self.patient1,text = "")
         self.patient1_bg.grid(row=0, column=0, padx=20, pady=(20, 20))
         
-        self.patient1_Description = customtkinter.CTkLabel(self.PPFrame1,text = f"Name: Youssef Mohamed\n Age: 20\nRoom Number: G103A\n Disease/Disability: Success", fg_color="black",text_color = "white",font=("System", 20, "bold"))
+        self.patient1_Description = customtkinter.CTkLabel(self.PPFrame1,text = f"Name: Youssef Mohamed\n Age: 20\nRoom Number: G103A\n Disease/Disability: Success", text_color = "white",font=("System", 20, "bold"))
         self.patient1_Description.grid(row=1, column=0, padx=20, pady=(20, 20))
 
         #-----------------------------
@@ -114,7 +114,7 @@ class MainGUI:
         self.patient2_bg = customtkinter.CTkLabel(self.PPFrame2, image=self.patient2,text = "")
         self.patient2_bg.grid(row=0, column=0, padx=20, pady=(20, 20))
         
-        self.patient2_Description = customtkinter.CTkLabel(self.PPFrame2,text = "Name: Mina Samir\n Age: 21\nRoom Number: G408A\n Disease/Disability: Alzheimer's", fg_color="black",text_color = "white",font=("System", 20, "bold"))
+        self.patient2_Description = customtkinter.CTkLabel(self.PPFrame2,text = "Name: Mina Samir\n Age: 21\nRoom Number: G408A\n Disease/Disability: Alzheimer's",text_color = "white",font=("System", 20, "bold"))
         self.patient2_Description.grid(row=1, column=0, padx=20, pady=(20, 20))
         
         #----------------------------------------
@@ -126,7 +126,7 @@ class MainGUI:
         self.patient3_bg = customtkinter.CTkLabel(self.PPFrame3, image=self.patient3,text = "")
         self.patient3_bg.grid(row=0, column=0, padx=20, pady=(20, 20))
         
-        self.patient3_Description = customtkinter.CTkLabel(self.PPFrame3,text = "Name: Steven Hany\n Age: 21\nRoom Number: D101\n Disease/Disability: Anger", fg_color="black",text_color = "white",font=("System", 20, "bold"))
+        self.patient3_Description = customtkinter.CTkLabel(self.PPFrame3,text = "Name: Steven Hany\n Age: 21\nRoom Number: D101\n Disease/Disability: Anger",text_color = "white",font=("System", 20, "bold"))
         self.patient3_Description.grid(row=1, column=0, padx=20, pady=(20, 20))
         
         #-----------------------------------------
@@ -134,11 +134,11 @@ class MainGUI:
         self.PPFrame4 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#2fa572",border_width=5, border_color="black",width=250,height=300)
         self.PPFrame4.grid(row=1, column=0,padx=10, pady=20)
 
-        self.patient4 = customtkinter.CTkImage(Image.open(self.current_path + "\Assets\Patients\pola.jpg"),size=(140, 150))
+        self.patient4 = customtkinter.CTkImage(Image.open(self.current_path + "\Assets\Patients\pola2.jpg"),size=(140, 150))
         self.patient4_bg = customtkinter.CTkLabel(self.PPFrame4, image=self.patient4,text = "")
         self.patient4_bg.grid(row=0, column=0, padx=20, pady=(20, 20))
         
-        self.patient4_Description = customtkinter.CTkLabel(self.PPFrame4,text = "Name: Pola Emanuel\n Age: 21\nRoom Number: E205\n Disease/Disability: None", fg_color="black",text_color = "white",font=("System", 20, "bold"))
+        self.patient4_Description = customtkinter.CTkLabel(self.PPFrame4,text = "Name: Pola Emanuel\n Age: 21\nRoom Number: E205\n Disease/Disability: None",text_color = "white",font=("System", 20, "bold"))
         self.patient4_Description.grid(row=1, column=0, padx=20, pady=(20, 20))
         
         #-----------------------------------------
@@ -257,7 +257,7 @@ class MainGUI:
             self.WarningLabel.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 - 10, anchor="center")
             # passlabel = customtkinter.CTkLabel(Main, text="Password", font=("System", 40, "bold"), fg_color= "red")
             # passlabel.place(x=Main.winfo_screenwidth()/2 - 800, y=Main.winfo_screenheight()/2 - 250, anchor="center")
-        if self.username_entry.get() == "mina" and self.password_entry.get() == "mina":
+        if self.username_entry.get() == "211777" and self.password_entry.get() == "1235":
             self.start_model = True
             self.Get_Dashboard()
             # cam_thread.start()
