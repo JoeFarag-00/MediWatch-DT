@@ -17,8 +17,8 @@ class Eating_Detector:
         self.Status_Eating = "Eating"
         self.Status_Not_Eating = "Not Eating"
         self.Flag_Eating = self.Status_Not_Eating
-        
-        self.Model_Path = self.script_directory + '/efficientdet.tflite'
+
+        self.Model_Path = self.script_directory + '\efficientdet.tflite'
         self.Base_Options = python.BaseOptions(model_asset_path = self.Model_Path)
         self.Options = vision.ObjectDetectorOptions(base_options=self.Base_Options, score_threshold=0.1, max_results=10)
         self.Detector = vision.ObjectDetector.create_from_options(self.Options)
@@ -62,5 +62,3 @@ class Eating_Detector:
         if(time.time() - self.Start_Time) >= self.Check_Sleep_Timer:
             self.Classify()
             self.Start_Time = 0
-
-Object = Eating_Detector()

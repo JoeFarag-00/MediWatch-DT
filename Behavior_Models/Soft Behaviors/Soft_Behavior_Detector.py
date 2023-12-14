@@ -1,5 +1,7 @@
 from Eat import *
 from Sleep import *
+from Facial_Expression import *
+from Gaze_Track import *
 import socket
 
 class Soft_Behavior_Detector:
@@ -14,6 +16,8 @@ class Soft_Behavior_Detector:
         
         self.Eat = Eating_Detector()
         self.Sleep = Sleeping_Detector()
+        self.Facial_Expression = Facial_Expression_Classifier()
+        self.Gaze_Tracking = Gaze_Tracking()
 
     def Classify(self, Frame):
         self.Sleep.Process_Frames(Frame)
@@ -21,10 +25,19 @@ class Soft_Behavior_Detector:
 
         if self.Flag_Sleeping == self.Sleep.Status_Awake:
             self.Eat.Process_Frames(Frame)
+            self.Facial_Expression.Process_Frames(Frame)
+            self.Gaze_Tracking.Process_Frames(Frame)
             self.Flag_Eating = self.Eat.Flag_Eating
+            self.Expression_Status = self.Facial_Expression.Expression_Status
+            self.Eye_X = self.Gaze_Tracking.Average_Eye_X
+            self.Eye_Y = self.Gaze_Tracking.Average_Eye_Y
+            self.Eye_X_Frame_Coordinate = self.Gaze_Tracking.Left_Center
+            self.Eye_Y_Frame_Coordinate = self.Gaze_Tracking.Right_Center
+
         else:
             self.Flag_Eating = "None"
-
-        if(self.Socket == True):
-            Status = f"{self.Flag_Sleeping}, {self.Flag_Eating}"
-            self.Sock.sendall(Status.encode("UTF-8"))
+            self.Expression_Status = "None"
+            self.Eye_X = "None"
+            self.Eye_Y = "None"
+            self.Eye_X_Frame_Coordinate = "None"
+            self.Eye_Y_Frame_Coordinate = "None"

@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import mediapipe as mp
 import time
 from scipy.spatial import distance
@@ -6,11 +7,11 @@ from scipy.spatial import distance
 class Sleeping_Detector:
     def __init__(self):
         self.Mp_FaceMesh = mp.solutions.face_mesh
-        self.Face_Mesh = self.Mp_FaceMesh.FaceMesh(max_num_faces = 1, min_detection_confidence=0.5)
+        self.Face_Mesh = self.Mp_FaceMesh.FaceMesh(max_num_faces = 1, refine_landmarks = True, min_detection_confidence=0.5, min_tracking_confidence = 0.5)
 
         self.Mp_Drawing = mp.solutions.drawing_utils
 
-        self.Ratio_Threshold = 4.5
+        self.Ratio_Threshold = 6
         self.Start_Time = 0
         self.Status_Sleep = "Sleeping"
         self.Status_Awake = "Awake"
@@ -25,16 +26,10 @@ class Sleeping_Detector:
             self.Mp_Drawing.draw_landmarks(self.Frame, Face_Land_Marks, self.Mp_FaceMesh.FACEMESH_TESSELATION)
     
     def Drawy_Eye(self):
-        for index in self.Left_Eye_LM:
-            landmark = self.Face_Land_Marks.landmark[index]
-            x, y = int(landmark.x * self.Frame.shape[1]), int(landmark.y * self.Frame.shape[0])
-            cv2.circle(self.Frame, (x, y), 2, (0, 255, 0), -1)
-        for index in self.Right_Eye_LM:
-            landmark = self.Face_Land_Marks.landmark[index]
-            x, y = int(landmark.x * self.Frame.shape[1]), int(landmark.y * self.Frame.shape[0])
-            cv2.circle(self.Frame, (x, y), 2, (0, 255, 0), -1)
+        cv2.polylines(self.Frame, [self.Coordinates[self.Left_Eye_LM]], True, (0, 255, 0), 1, cv2.LINE_AA)
+        cv2.polylines(self.Frame, [self.Coordinates[self.Right_Eye_LM]], True, (0, 255, 0), 1, cv2.LINE_AA)
 
-        return self.Frame_Copy
+        return self.Frame
 
     def Calculate_Ratio(self):
         RHorizontal_Right = self.Coordinates[self.Right_Eye_LM[0]]
@@ -64,7 +59,6 @@ class Sleeping_Detector:
 
     def Process_Frames(self, Frame):
         self.Frame = Frame
-        self.Frame = self.Frame = cv2.flip(self.Frame, 1)
 
         self.Frame = cv2.cvtColor(self.Frame, cv2.COLOR_BGR2RGB)
         self.Frame.flags.writeable = False
@@ -73,15 +67,12 @@ class Sleeping_Detector:
         
         self.Frame.flags.writeable = True
         self.Frame = cv2.cvtColor(self.Frame, cv2.COLOR_RGB2BGR)
-        
-        self.Annotated_Frame = self.Frame
 
         if self.Results.multi_face_landmarks:
-            self.Draw_Face_Mesh()
             for self.Face_Land_Marks in self.Results.multi_face_landmarks:
                 self.Height, self.Width, self.Channels = self.Frame.shape
 
-                self.Coordinates = [(int(Point.x * self.Width), int(Point.y * self.Height)) for Point in self.Face_Land_Marks.landmark]
+                self.Coordinates = np.array([np.multiply([Point.x,Point.y], [self.Width, self.Height]).astype(int) for Point in self.Face_Land_Marks.landmark])
 
                 self.Ratio = self.Calculate_Ratio()
                 
@@ -91,12 +82,9 @@ class Sleeping_Detector:
                     self.Start_Time = 0
 
                 if self.Start_Time > 0:
-                    cv2.putText(self.Frame, str(round(time.time() - self.Start_Time, 2)) + "/20", (20, 70), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
+                    self.Timer = str(round(time.time() - self.Start_Time, 2)) + "/20"
 
                 if self.Ratio > self.Ratio_Threshold and (time.time() - self.Start_Time) >= self.Check_Sleep_Timer:
                     self.Flag_Sleep = self.Status_Sleep
-                    cv2.putText(self.Frame, str(self.Flag_Sleep), (20, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2)
                 else:
                     self.Flag_Sleep = self.Status_Awake
-                    cv2.putText(self.Frame, str(self.Flag_Sleep), (20, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
-     
