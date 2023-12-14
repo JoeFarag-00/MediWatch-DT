@@ -25,17 +25,17 @@ sys.path.append('Database')
 from Authentication import FaceIdentificationSystem
 
 
-
-
 Main = customtkinter.CTk()
 
 class MainGUI:
     def __init__(self):
         self.Main = Main
         self.start_model = False
+        self.Load_Stats = False
+
         self.Nurses = [
-        {"id": "211777", "name": "Youssef"},
-        {"id": "212257", "name": "Mina"},
+        {"id": "211777", "password": "1234","name": "Youssef"},
+        {"id": "212257", "password": "1234","name": "Mina"},
         ]
         self.Get_Gest_Stat = HandGestureProcessor()
         self.Get_Soft_Stat = Soft_Behavior_Detector()
@@ -47,10 +47,6 @@ class MainGUI:
         widgets = Main.winfo_children()
         for widget in widgets:
             widget.destroy()
-
-    def Continue(self):
-        self.DestroyAll()
-        self.Login_Page()
 
     def Exit(self):
         os._exit(0)
@@ -168,13 +164,14 @@ class MainGUI:
         self.progressbar.start()
         
         # self.Retreive_Stats()
+        self.Load_Stats = True
         
     def Retreive_Stats(self):
         
         cap = cv2.VideoCapture(1)
 
         while cap.isOpened():
-            if(self.start_model):
+            if(self.start_model and self.Load_Stats):
                 # time.sleep(1)
                 Ret, Frame = cap.read()
                 if not Ret:
@@ -252,9 +249,18 @@ class MainGUI:
                 self.password_entry.configure(bg_color="red")
                 self.WarningLabel.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 + 25, anchor="center")
            
-            if self.username_entry.get() == "211777" and self.password_entry.get() == "1235":
-                self.start_model = True
-                self.Get_Dashboard()
+            if self.username_entry.get() != "" and self.password_entry.get() != "":
+                username = self.username_entry.get()
+                password = self.password_entry.get()
+                for user in self.Nurses:
+                    if user["id"] == username and user["password"] == password:
+                        self.Auth_Name = user["name"]
+                        print("Login User:", self.Auth_Name)
+                        self.start_model = True
+                        self.Get_Dashboard()
+                        break
+            else:
+                self.WarningLabel2.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 + 25, anchor="center")
         
         elif Ltype == "face":
             Auth = self.Face_System.start_authentication()
@@ -266,9 +272,6 @@ class MainGUI:
             else:
                 self.WarningLabel2.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 + 25, anchor="center")
            
-
-            
-
     def GoBack_Home(self):
         self.DestroyAll()
         Main.geometry("700x580".format(self.ScreenWidth, self.ScreenHeight))
@@ -323,7 +326,7 @@ class MainGUI:
         Main.geometry("700x580".format(self.ScreenWidth, self.ScreenHeight))
 
         self.WelcomeLabel = customtkinter.CTkLabel(Main, text="Patient-See", font=("System", 40, "bold"))
-        self.ContinueButton = customtkinter.CTkButton(Main, text="Continue", command=lambda: self.Continue(),  width=500, height=125, font=("System", 40, "bold"), fg_color="darkgreen")
+        self.ContinueButton = customtkinter.CTkButton(Main, text="Continue", command=lambda: self.Login_Page(),  width=500, height=125, font=("System", 40, "bold"), fg_color="darkgreen")
         self.QuitButton = customtkinter.CTkButton(Main, text="Quit", command=quit, width=500, height=125, font=("System", 40, "bold"), fg_color="darkgreen")
         self.WelcomeLabel.place(x=self.ScreenWidth/2-610, y=self.ScreenHeight/2 - 450, anchor="center")
         self.ContinueButton.place(x=self.ScreenWidth/2 - 610, y=self.ScreenHeight/2 - 250, anchor="center")
