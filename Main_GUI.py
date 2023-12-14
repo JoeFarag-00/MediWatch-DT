@@ -15,6 +15,17 @@ from tkinter_webcam import webcam
 import time
 import sys
 import socket
+sys.path.append('Behavior_Models/Fall Detection')
+from Fall_Detection import FallDetector
+sys.path.append('Behavior_Models/Soft Behaviors')
+from Soft_Behavior_Detector import Soft_Behavior_Detector
+sys.path.append('Behavior_Models/Hand Gesture')
+from HandGest2 import HandGestureProcessor
+sys.path.append('Database')
+from Authentication import FaceIdentificationSystem
+
+
+
 
 Main = customtkinter.CTk()
 
@@ -22,6 +33,14 @@ class MainGUI:
     def __init__(self):
         self.Main = Main
         self.start_model = False
+        self.Nurses = [
+        {"id": "211777", "name": "Youssef"},
+        {"id": "212257", "name": "Mina"},
+        ]
+        self.Get_Gest_Stat = HandGestureProcessor()
+        self.Get_Soft_Stat = Soft_Behavior_Detector()
+        self.Get_Fall_Stat = FallDetector()
+        self.Face_System = FaceIdentificationSystem(known_nurses=self.Nurses)
 
     @staticmethod
     def DestroyAll():
@@ -46,7 +65,6 @@ class MainGUI:
         self.users = None
         self.sent_message = None
         self.received_message = None
-        self.name = "Nurse"
         self.Gesture_Stat = None
         self.message_counter = 1
         self.chat_counter = 2
@@ -60,7 +78,7 @@ class MainGUI:
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
         self.logo = customtkinter.CTkLabel(self.sidebar_frame, image=self.app_logo, text="", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo.grid(row=0, column=0, padx=20, pady=(20, 10))
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Chats", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Nurse", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=1, column=0, padx=20)
         
         self.Profile_Button = customtkinter.CTkButton(self.sidebar_frame, text="Profile")
@@ -95,8 +113,8 @@ class MainGUI:
         
         #----------------------------------------
         
-        self.PPFrame1 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#2fa572",border_width=5, border_color="black",width=250,height=300)
-        self.PPFrame1.grid(row=0, column=0, padx=10,pady=20)
+        self.PPFrame1 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#628680",border_width=5, border_color="black",width=250,height=300)
+        self.PPFrame1.grid(row=0, column=0,pady=20)
 
         self.patient1 = customtkinter.CTkImage(Image.open(self.current_path + "\Assets\Patients\me.jpg"),size=(140, 150))
         self.patient1_bg = customtkinter.CTkLabel(self.PPFrame1, image=self.patient1,text = "")
@@ -107,7 +125,7 @@ class MainGUI:
 
         #-----------------------------
         
-        self.PPFrame2 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#2fa572",border_width=5, border_color="black",width=250,height=300)
+        self.PPFrame2 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#628680",border_width=5, border_color="black",width=250,height=300)
         self.PPFrame2.grid(row=0, column=1,padx=50,pady=20)
 
         self.patient2 = customtkinter.CTkImage(Image.open(self.current_path + "\Assets\Patients\mina.jpg"),size=(140, 150))
@@ -119,7 +137,7 @@ class MainGUI:
         
         #----------------------------------------
         
-        self.PPFrame3 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#2fa572",border_width=5, border_color="black",width=250,height=300)
+        self.PPFrame3 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#628680",border_width=5, border_color="black",width=250,height=300)
         self.PPFrame3.grid(row=0, column=2,padx=10,pady=20)
 
         self.patient3 = customtkinter.CTkImage(Image.open(self.current_path + "\Assets\Patients\steven.jpg"),size=(140, 150))
@@ -131,7 +149,7 @@ class MainGUI:
         
         #-----------------------------------------
         
-        self.PPFrame4 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#2fa572",border_width=5, border_color="black",width=250,height=300)
+        self.PPFrame4 = customtkinter.CTkFrame(self.scrollable_frame, corner_radius=20, fg_color="#628680",border_width=5, border_color="black",width=250,height=300)
         self.PPFrame4.grid(row=1, column=0,padx=10, pady=20)
 
         self.patient4 = customtkinter.CTkImage(Image.open(self.current_path + "\Assets\Patients\pola2.jpg"),size=(140, 150))
@@ -153,117 +171,103 @@ class MainGUI:
         
     def Retreive_Stats(self):
         
-        sys.path.append('Behavior_Models/Soft Behaviors')
-        from Soft_Behavior_Detector import Soft_Behavior_Detector
-        Get_Soft_Stat = Soft_Behavior_Detector()
         cap = cv2.VideoCapture(1)
 
         while cap.isOpened():
             if(self.start_model):
-                time.sleep(1)
+                # time.sleep(1)
                 Ret, Frame = cap.read()
                 if not Ret:
                     break
-                Get_Soft_Stat.Classify(Frame)
-                self.Sleep_Stat = Get_Soft_Stat.Flag_Sleeping
-                self.Eating_Stat = Get_Soft_Stat.Flag_Eating
+                self.Get_Soft_Stat.Classify(Frame)
+                self.Sleep_Stat = self.Get_Soft_Stat.Flag_Sleeping
+                self.Eating_Stat = self.Get_Soft_Stat.Flag_Eating
                 print(f"Soft Behaviors Stat: {self.Sleep_Stat}, {self.Eating_Stat}")
-                Soft_Frame = Get_Soft_Stat.Sleep.Frame
-                cv2.putText(Frame, str(self.Eating_Stat), (200, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
-                cv2.imshow('Soft Behavior', Soft_Frame)
-
-                if (cv2.waitKey(1) & 0xFF == 27 or cv2.getWindowProperty("Soft Behavior", cv2.WND_PROP_VISIBLE) < 1):
-                    break
-                
-                # self.patient1_stat = customtkinter.CTkLabel(self.PPFrame1,text = "Status: ", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                # self.patient1_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                
-                # self.patient2_stat = customtkinter.CTkLabel(self.PPFrame2,text = "Status: ", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                # self.patient2_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                
-                # self.patient3_stat = customtkinter.CTkLabel(self.PPFrame3,text = "Status: ", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                # self.patient3_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                
-                # if(self.Gesture_Stat != "fist-hand"):
-                #     self.patient1_stat.configure(self.PPFrame1,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                #     self.patient1_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                    
-                #     self.patient2_stat.configure(self.PPFrame2,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                #     self.patient2_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                    
-                #     self.patient3_stat.configure(self.PPFrame3,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                #     self.patient3_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
+                Soft_Frame = self.Get_Soft_Stat.Sleep.Frame
                 
                 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                sys.path.append('Behavior_Models/Hand Gesture')
-                from hand_gesture import HandGestureRecognition
                 
-                Get_Gest_Stat = HandGestureRecognition()
-                
-                self.Gesture_tuple = Get_Gest_Stat.hand_gesture(Frame)
-                self.Gesture_Stat = str(self.Gesture_tuple[0])
-                print("Gesture Stat: ",self.Gesture_Stat)
-                
-                # if(self.Gesture_Stat == "fist-hand"):
-                    
-                #     self.patient1_stat.configure(self.PPFrame1,text = f"Status: {self.Gesture_Stat}", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                #     self.patient1_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                    
-                #     self.patient2_stat.configure(self.PPFrame2,text = f"Status: {self.Gesture_Stat}", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                #     self.patient2_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                    
-                #     self.patient3_stat.configure(self.PPFrame3,text = f"Status: {self.Gesture_Stat}", fg_color="#FF8157",text_color="black",font=("System", 20, "bold"))
-                #     self.patient3_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
-                    
+                self.Fall_Stat, self.Fall_Frame =  self.Get_Fall_Stat.detect(Frame)
+                print("Fall Detection: ",self.Fall_Stat)
+
                 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     
-                sys.path.append('Behavior_Models/Fall Detection')
-                from Fall_Detection import FallDetector
-                
-                self.Get_Fall_Stat = FallDetector()
-                self.Fall_Stat, self.Fall_Frame =  self.Get_Fall_Stat.detect(Frame)
+                self.Gesture_Stat = self.Get_Gest_Stat.process_frame(Frame)
+                print("Gesture Stat: ",self.Gesture_Stat)
+                # if self.Gesture_Stat == "Request Made":
+                #     cv2.putText(Frame, "Request has been made", (40, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2)
+                # elif self.Gesture_Stat == "canceled" and self.request_status != "idle":
+                #     cv2.putText(Frame, "Request Canceled", (40, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2)
+               
                 # cv2.imshow('Fall Detection', self.Fall_Frame)
-                print("Fall Detection: ",self.Fall_Stat)
                 
-                self.patient1_stat = customtkinter.CTkLabel(self.PPFrame1,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="#B80E0E",text_color="black",font=("System", 20, "bold"))
+                # self.patient1_stat = customtkinter.CTkLabel(self.PPFrame1,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="#B80E0E",text_color="black",font=("System", 22, "bold"))
+                # self.patient1_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
+                
+                # self.patient2_stat = customtkinter.CTkLabel(self.PPFrame2,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="#B80E0E",text_color="black",font=("System", 22, "bold"))
+                # self.patient2_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
+                
+                # self.patient3_stat= customtkinter.CTkLabel(self.PPFrame3,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="#B80E0E",text_color="black",font=("System", 22, "bold"))
+                # self.patient3_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
+                
+                cv2.putText(Frame, f"Status: {self.Sleep_Stat,self.Eating_Stat,self.Fall_Stat,self.Gesture_Stat}", (20, 30), cv2.FONT_HERSHEY_PLAIN, 1.2, (255, 0, 0), 2)
+                if self.Get_Soft_Stat.Sleep.Start_Time:
+                    cv2.putText(Frame, f"Sleep Timer: {self.Get_Soft_Stat.Sleep.sleep_timer}", (20, 50), cv2.FONT_HERSHEY_PLAIN, 1.2, (255, 0, 0), 2)
+
+                cv2.imshow('Patient Monitor', Frame)
+                
+                
+                if (cv2.waitKey(1) & 0xFF == 27 or cv2.getWindowProperty("Patient Monitor", cv2.WND_PROP_VISIBLE) < 1):
+                    break
+                
+                self.patient1_stat = customtkinter.CTkLabel(self.PPFrame1,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="black",text_color="white",font=("System", 20, "bold"))
                 self.patient1_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
                 
-                self.patient2_stat = customtkinter.CTkLabel(self.PPFrame2,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="#B80E0E",text_color="black",font=("System", 20, "bold"))
+                self.patient2_stat = customtkinter.CTkLabel(self.PPFrame2,text = f"Status: PATIENT NOT PRESENT", fg_color="#B80E0E",text_color="black",font=("System", 20, "bold"))
                 self.patient2_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
                 
-                self.patient3_stat= customtkinter.CTkLabel(self.PPFrame3,text = f"Status: {self.Sleep_Stat,self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nEmergency: {self.Fall_Stat}", fg_color="#B80E0E",text_color="black",font=("System", 20, "bold"))
+                self.patient3_stat= customtkinter.CTkLabel(self.PPFrame3,text = f"Status: PATIENT NOT PRESENT", fg_color="#B80E0E",text_color="black",font=("System", 20, "bold"))
                 self.patient3_stat.grid(row=2, column=0, padx=20, pady=(20, 20))
         
-
         cap.release()
         cv2.destroyAllWindows()
                     
 
     def set_name(self):
-        self.logo_label.configure(text=self.name)
+        self.logo_label.configure(text=self.Auth_Name)
         
-    def Check_Credentials1(self):
+    def Check_Credentials1(self, Ltype):
+        
         self.WarningLabel = customtkinter.CTkLabel(Main, text="Missing Fields...", font=customtkinter.CTkFont(size=20, weight="bold"), fg_color="red")
+        self.WarningLabel2 = customtkinter.CTkLabel(Main, text="Wrong Credentials", font=customtkinter.CTkFont(size=20, weight="bold"), fg_color="red")
 
-        if self.username_entry.get() == "":
-            print("NOT ACCEPTED")
-            self.username_entry.configure(bg_color="red")
-            self.WarningLabel.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 - 10, anchor="center")
-            # userlabel = customtkinter.CTkLabel(Main, text="Username", font=("System", 40, "bold"), fg_color= "red")
-            # userlabel.place(x=Main.winfo_screenwidth()/2 - 800, y=Main.winfo_screenheight()/2 - 400, anchor="center")
-        if self.password_entry.get() == "":
-            print("NOT ACCEPTED")
-            self.password_entry.configure(bg_color="red")
-            self.WarningLabel.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 - 10, anchor="center")
-            # passlabel = customtkinter.CTkLabel(Main, text="Password", font=("System", 40, "bold"), fg_color= "red")
-            # passlabel.place(x=Main.winfo_screenwidth()/2 - 800, y=Main.winfo_screenheight()/2 - 250, anchor="center")
-        if self.username_entry.get() == "211777" and self.password_entry.get() == "1235":
-            self.start_model = True
-            self.Get_Dashboard()
-            # cam_thread.start()
+        if Ltype == "text":
+            if self.username_entry.get() == "":
+                print("NOT ACCEPTED")
+                self.username_entry.configure(bg_color="red")
+                self.WarningLabel.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 + 25, anchor="center")
+         
+            if self.password_entry.get() == "":
+                print("NOT ACCEPTED")
+                self.password_entry.configure(bg_color="red")
+                self.WarningLabel.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 + 25, anchor="center")
+           
+            if self.username_entry.get() == "211777" and self.password_entry.get() == "1235":
+                self.start_model = True
+                self.Get_Dashboard()
         
-            #CHECK SERVER FOR ACTUAL PASS STEVEN CRUD      
-        
+        elif Ltype == "face":
+            Auth = self.Face_System.start_authentication()
+            if Auth:
+                Nurse_ID, Nurse_Name = Auth
+                self.Auth_Name = Nurse_Name
+                self.start_model = True
+                self.Get_Dashboard() 
+            else:
+                self.WarningLabel2.place(x=Main.winfo_screenwidth()/2 - 510, y=Main.winfo_screenheight()/2 + 25, anchor="center")
+           
+
+            
 
     def GoBack_Home(self):
         self.DestroyAll()
@@ -298,8 +302,11 @@ class MainGUI:
         self.username_entry.grid(row=2, column=0, padx=30, pady=(15, 15))
         self.password_entry = customtkinter.CTkEntry(self.login_frame, width=200, show="*", placeholder_text="password")
         self.password_entry.grid(row=3, column=0, padx=30, pady=(0, 15))
-        self.login_button = customtkinter.CTkButton(self.login_frame, text="Login", command=lambda:self.Check_Credentials1(), width=200)
+        self.login_button = customtkinter.CTkButton(self.login_frame, text="Login", command=lambda:self.Check_Credentials1("text"), width=200)
         self.login_button.grid(row=4, column=0, padx=30, pady=(15, 15))
+        
+        self.Face_button = customtkinter.CTkButton(self.login_frame, text="Use Face", command=lambda:self.Check_Credentials1("face"), width=200)
+        self.Face_button.grid(row=5, column=0, padx=30, pady=(10, 10))
         
         self.Back_Btn = customtkinter.CTkButton(Main, text="<- Back",width=80, height=32, font=("System", 20, "bold"), fg_color="DarkRed", command=lambda:self.GoBack_Home())
         self.Back_Btn.place(x=Main.winfo_screenwidth()/2 - 880,y=Main.winfo_screenheight()/2 - 490, anchor="center")
