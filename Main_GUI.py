@@ -97,7 +97,8 @@ class MainGUI:
         self.tabview.add("Active Nurses")
         self.set_name()
         self.Apply_Patient_Profiles()
-
+        
+     # CREATE DB CRUD HERE 
             
     def Apply_Patient_Profiles(self):
         
