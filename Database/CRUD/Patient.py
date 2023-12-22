@@ -5,7 +5,7 @@ import copy
 
 class Patient(parent_crud):
 
-    def add_patient(self, name, DOB, gender, disease, room_no, medicines, status, password, nationality, username):
+    def add_patient(self, name, DOB, gender, disease, room_no, medicines, status, password, nationality, username, image):
         data = copy.copy(self.patient_data)
         data["name"] = name
         data["DOB"] = DOB
@@ -17,9 +17,10 @@ class Patient(parent_crud):
         data["password"] = password
         data["nationality"] = nationality
         data["username"] = username
+        data["image"] = image
         return self._create(data, self.patient)
 
-    def create_multiple_filter(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None):
+    def create_multiple_filter(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None, image=None):
         data = {}
         if id is not None:
             data["_id"] = id
@@ -43,12 +44,14 @@ class Patient(parent_crud):
             data["nationality"] = nationality
         if username is not None:
             data["username"] = username
+        if image is not None:
+            data["image"] = image
         return data
 
     def read_all_patients(self):
         return self._read_all(self.patient)
 
-    def create_multiple_filter(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None):
+    def create_multiple_filter(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None, image=None):
         data = {}
         if id is not None:
             data["_id"] = id
@@ -72,16 +75,18 @@ class Patient(parent_crud):
             data["nationality"] = nationality
         if username is not None:
             data["username"] = username
+        if image is not None:
+            data["image"] = image
         return data
 
-    def read_one(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None, filter=None):
+    def read_one(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None, filter=None, image=None):
         if filter is None:
-            filter = self.create_multiple_filter(id, name, DOB, gender, disease, room_no, medicines, status, password, nationality, username)
+            filter = self.create_multiple_filter(id, name, DOB, gender, disease, room_no, medicines, status, password, nationality, username, image)
         return self._read_one(filter, self.patient)
 
-    def read_all_by_filter(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None, filter=None):
+    def read_all_by_filter(self, id=None, name=None, DOB=None, gender=None, disease=None, room_no=None, medicines=None, status=None, password=None, nationality=None, username=None, filter=None, image=None):
         if filter is None:
-            filter = self.create_multiple_filter(id, name, DOB, gender, disease, room_no, medicines, status, password, nationality, username)
+            filter = self.create_multiple_filter(id, name, DOB, gender, disease, room_no, medicines, status, password, nationality, username, image)
         all_patients = self._read_all(self.patient)
         filtered_patients = []
 
@@ -126,7 +131,8 @@ if __name__ == '__main__':
         "Admitted",  # should be an array of stats as pleased
         "password123",
         "American",
-        "jdoe"
+        "jdoe",
+        "https://example.com/johndoe.jpg"
     ))
     print("\n\n\n\n")
 
@@ -140,7 +146,8 @@ if __name__ == '__main__':
         "In Treatment",  # should be an array of stats as pleased
         "secure_pass",
         "British",
-        "alice_smith"
+        "alice_smith",
+        "https://example.com/alicesmith.jpg"
     ))
 
     print(patient.read_all_patients())
@@ -162,7 +169,8 @@ if __name__ == '__main__':
         status="In Treatment",  # should be an array of stats as pleased
         password="secure_pass",
         nationality="British",
-        username="alice_smith"
+        username="alice_smith",
+        image="https://example.com/alicesmith.jpg"
     )
 
     alice_new = patient.create_multiple_filter(
@@ -175,7 +183,8 @@ if __name__ == '__main__':
         status="Recovered",  # should be an array of stats as pleased
         password="secure_pass",
         nationality="American",
-        username="alice_smith"
+        username="alice_smith",
+        image="https://example.com/alicesmith_recovered.jpg"
     )
 
     print(patient.update_patient(alice_old, alice_new))
