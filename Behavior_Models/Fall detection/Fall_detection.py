@@ -42,7 +42,7 @@ class FallDetector:
             landmark_coords = landmark_coords.reshape((1, 33, 2))
             
             detection = self.model.predict(landmark_coords)
-            self.stat = "Fall" if detection[0] < 0.4 else "Safe"
+            self.stat = "Fall" if detection[0] < 0.5 else "Safe"
             
             print(detection)
             pose.close()
