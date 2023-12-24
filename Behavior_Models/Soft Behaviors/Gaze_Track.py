@@ -1,10 +1,21 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+import csv
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import os
 
 class Gaze_Tracking:
     def __init__(self, Path = ""):
         self.Path = Path
+
+        self.Script_Directory = os.path.dirname(os.path.abspath(__file__))
+        CSV_Filename = "Gaze_Data.csv"
+        self.CSV_Path = self.Script_Directory + f"\{CSV_Filename}"
+        self.CSV_File = open(self.CSV_Path, mode='w', newline='')
+        self.CSV_Writer = csv.writer(self.CSV_File)
 
         if len(self.Path) > 0:
             self.Capture = cv2.VideoCapture(self.Path)
@@ -29,9 +40,19 @@ class Gaze_Tracking:
         cv2.circle(self.Frame, self.Left_Center, int(1), (0, 255, 0), 1, cv2.LINE_AA)
         cv2.circle(self.Frame, self.Right_Center, int(1), (0, 255, 0), 1, cv2.LINE_AA)
 
-        cv2.putText(self.Frame, f"{self.Left_Center}, {self.Right_Center}", (20, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
+        # cv2.putText(self.Frame, f"{self.Left_Center}, {self.Right_Center}", (20, 30), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
 
         return self.Frame
+    
+    def Generate_Heatmap(self):
+        Eye_Data = pd.read_csv(self.CSV_Path, header=None,names=["X","Y"])
+        fig,ax=plt.subplots(figsize=(10,8))
+        sns.kdeplot(x=Eye_Data['X'],y=Eye_Data['Y'],fill=True,
+                    cmap='rainbow', cbar=False,alpha=0.4)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_frame_on(False)
+        plt.savefig(self.Script_Directory + "\Heatmap.png",bbox_inches='tight',pad_inches=0)
 
     def Process_Frames(self, Frame):
         self.Frame = Frame
@@ -51,6 +72,8 @@ class Gaze_Tracking:
 
                 self.Average_Eye_X = (self.Face_Land_Marks.landmark[self.Left_Iris[1]].x + self.Face_Land_Marks.landmark[self.Right_Iris[1]].x) / 2
                 self.Average_Eye_Y = (self.Face_Land_Marks.landmark[self.Left_Iris[1]].y + self.Face_Land_Marks.landmark[self.Right_Iris[1]].y) / 2
+                self.CSV_Writer.writerow([self.Average_Eye_X, self.Average_Eye_Y])
+                self.CSV_File.flush()
                 self.Coordinates = np.array([np.multiply([Point.x,Point.y], [self.Width, self.Height]).astype(int) for Point in self.Face_Land_Marks.landmark])
                 
                 (self.Left_x, self.Left_y), self.Left_Radius = cv2.minEnclosingCircle(self.Coordinates[self.Left_Iris])
