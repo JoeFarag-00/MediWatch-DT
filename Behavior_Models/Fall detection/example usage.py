@@ -5,12 +5,12 @@ from tensorflow import keras
 # Send the object of the patient and the model path here        
 
 # Open the video file (change 'video_file.mp4' to your video file path)
-video_file = 'data1\\0.png'
+video_file = 1
 cap = cv2.VideoCapture(video_file)
-fall = fd.FallDetector(None, 'Fall_model3.h5')
+fall = fd.FallDetector(None, 'Fall_model new.h5')
 
 frame_counter = 0
-frame_skip = 5  # Process every 5th frame
+frame_skip = 2  # Process every 5th frame
 
 stat = "None"
 stat_pause = stat
