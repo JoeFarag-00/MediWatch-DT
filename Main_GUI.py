@@ -21,17 +21,18 @@ import pycountry
 import socket
 from bson.objectid import ObjectId
 from shutil import copyfile
+import qrcode
 sys.path.append('Behavior_Models/Fall Detection')
 from Fall_detection import FallDetector
-
+from pyzbar.pyzbar import decode 
 sys.path.append('Behavior_Models/Soft Behaviors')
 from Soft_Behavior_Detector import Soft_Behavior_Detector
 sys.path.append('Behavior_Models/Hand Gesture')
 from HandGest2 import HandGestureProcessor
 sys.path.append('Database')
 from Authentication import FaceIdentificationSystem
-# sys.path.append("Behavior_Models/TUIO")
-# from Source import Medicine_TUIO
+sys.path.append("Behavior_Models/TUIO")
+from Source import Medicine_TUIO
 
 sys.path.append('Database')
 from source import Patient
@@ -82,7 +83,7 @@ class MainGUI:
         self.Face_System = FaceIdentificationSystem(known_nurses=self.Nurses_Auth)
         self.Patient_DB = Patient()
         self.Nurse_DB = Nurse()
-        # self.MediTUIO = Medicine_TUIO()
+        self.MediTUIO = Medicine_TUIO()
 
         self.Patients_Data_Card_DB = self.Patient_DB.read_all_patients()
         print(self.Patients_Data_Card_DB)
@@ -111,10 +112,12 @@ class MainGUI:
         
     def Refresh_New(self):
         self.Patients_Data_Card_DB = self.Patient_DB.read_all_patients()
-        self.DestroyAll()
-        self.Get_Dashboard()
-        self.IsRefreshed = True
-        self.Retreive_Stats()
+        # self.DestroyAll()
+        # self.Get_Dashboard()
+        self.Patient_Frames_List.clear()
+        self.Apply_Patient_Profiles()
+        # self.IsRefreshed = True
+        # self.Retreive_Stats()
         
 
 
@@ -243,16 +246,22 @@ class MainGUI:
 
     def check_for_DupRoom(self, entry):
         existing_room_numbers = set(patient["room_no"] for patient in self.Patients_Data_Card_DB)
-        if entry["room_number"] in existing_room_numbers:
-            return True
-        else:
-            return False
+        try:
+            if entry["room_number"] in existing_room_numbers:
+                return True
+        except:
+            
+            if entry["room_no"] in existing_room_numbers:
+                return True
+            else:
+                return False
+        return False
     
         
     def Store_Patient(self):
         self.Patients_Data_Card_DB = self.Patient_DB.read_all_patients()
         self.WarningLabel = customtkinter.CTkLabel(Main, text="Missing Fields...", font=customtkinter.CTkFont(size=20, weight="bold"),text_color="red" )
-        if self.image_path and self.First_Name_Entry.get() and self.Last_Name_Entry.get() and self.Dob_day_Entry.get() and self.Dob_month_Entry.get() and self.Dob_year_Entry.get() and self.Gender_Btn.get() and self.country_box.get() != "Select Country" and self.Disease_Entry.get() and self.Priority_Btn.get() and self.Medicine.get() and self.Medical_Description_TBOX.get('0.0','end'):
+        if self.image_path and self.First_Name_Entry.get() and self.Last_Name_Entry.get() and self.Dob_day_Entry.get() and self.Dob_month_Entry.get() and self.Dob_year_Entry.get() and self.Gender_Btn.get() and self.country_box.get() != "Select Country" and self.Room_Number.get() and self.Disease_Entry.get() and self.Priority_Btn.get() and self.Medicine.get() and self.Medical_Description_TBOX.get('0.0','end'):
             if self.image_path:
                 if self.Check_Name:
                     if self.Check_Ints(self.Dob_day_Entry.get()) and self.Check_Ints(self.Dob_month_Entry.get()) and self.Check_Ints(self.Dob_year_Entry.get()):
@@ -264,6 +273,7 @@ class MainGUI:
                             copyfile(self.image_path, destination_path)
                             print(f"Image '{file_name}' successfully copied to '{destination_folder}'")
                         except Exception as e:
+                            # self.Edit_Patient_Data["image_path"] = file_name
                             print(f"Error copying image: {e}")
                             
                         Name = self.First_Name_Entry.get()+" "+self.Last_Name_Entry.get()
@@ -317,7 +327,10 @@ class MainGUI:
                                 self.Medical_Description_TBOX.delete("0.0","end")
                                 self.Patientimg_Label.destroy()
                                 self.image_path = None
-                            
+                                
+                                
+                                self.Patient_Frames_List.clear()
+                                self.Apply_Patient_Profiles()
                             
                             else:
                                 messagebox.showerror("Error", f"A Patient with this room number already exists.")
@@ -401,37 +414,42 @@ class MainGUI:
         self.Load_Image_Btn = customtkinter.CTkButton(self.scrollable_frame2, text="Register",width=200, font=("System", 30, "bold"), fg_color="#628680", command=lambda:self.Store_Patient())
         self.Load_Image_Btn.grid(row=9, column=1,pady=10,padx=(40,0))
 
-    def Change_Patient_Image(self, idx,LoadImg_Frame ,patient_img, patientLbl):
-        image_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp;*.gif")])
+    def Change_Patient_Image(self, idx,LoadImg_Frame ,patient_img, patientLbl): ##PIMGBUG
+        self.EDimage_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp;*.gif")])
         
-        if image_path:
-            patient_img = customtkinter.CTkImage(Image.open(image_path),size=(210, 250))
+        if self.EDimage_path:
+            patient_img = customtkinter.CTkImage(Image.open(self.EDimage_path),size=(210, 250))
             patientLbl = customtkinter.CTkLabel(LoadImg_Frame, image=patient_img,text = "")
             patientLbl.grid(row=0, column=0, padx=20, pady=(20, 20))
             
             destination_folder = "Database/Patients" 
             
-            file_name = os.path.basename(image_path)
+            file_name = os.path.basename(self.EDimage_path)
             destination_path = os.path.join(destination_folder, file_name)
             try:
-                copyfile(image_path, destination_path)
-                print(f"Image '{file_name}' successfully copied to '{destination_folder}'")
+                copyfile(self.EDimage_path, destination_path)
                 self.Edit_Patient_Data["image_path"] = file_name
+                print(f"Image '{file_name}' successfully copied to '{destination_folder}'")
                 print("new file: ",self.Edit_Patient_Data["image_path"])
 
             except Exception as e:
                 print(f"Error copying image: {e}")
+                self.Edit_Patient_Data["image_path"] = file_name
                 
                 
     def Edit_Patient(self, idx):
-
-        edit_window = customtkinter.CTkToplevel(Main, width=400, height=400)
+        try:
+            self.Edit_Window.destroy()
+        except:
+            pass
+        self.Edit_Window = customtkinter.CTkToplevel(Main, width=400, height=400)
+        self.Edit_Window.focus()
         # self.Patients_Data_Card_DB = self.Patient_DB.read_all_patients()
         # print(self.Patients_Data_Card_DB[idx]["image_path"])
         self.Edit_Patient_Data = self.Patients_Data_Card_DB[idx]
-        print(self.Edit_Patient_Data["image_path"])
+        print("EDIT SELECTION: ",self.Edit_Patient_Data["name"])
         
-        Patient_Picture_Frame = customtkinter.CTkFrame(edit_window, width=550,height=430)
+        Patient_Picture_Frame = customtkinter.CTkFrame(self.Edit_Window, width=550,height=430)
         Patient_Picture_Frame.grid(row=0, column=0, padx=(30, 20), pady=(10, 10))
         
         LoadImg_Frame = customtkinter.CTkFrame(Patient_Picture_Frame, corner_radius=20, fg_color="#628680",border_width=5, border_color="black",width=250,height=300)
@@ -443,11 +461,11 @@ class MainGUI:
         Patientimg_Label = customtkinter.CTkLabel(LoadImg_Frame, image=Patient_img,text = "")
         Patientimg_Label.grid(row=0, column=0, padx=20, pady=(20, 20))
         
-        rm_Image_Btn = customtkinter.CTkButton(Patient_Picture_Frame, text="Change Picture",width=200, font=("System", 30, "bold"), fg_color="#FF8600", hover_color="#FF3200", command=lambda:self.Change_Patient_Image(idx, LoadImg_Frame,Patient_img,Patientimg_Label))
+        rm_Image_Btn = customtkinter.CTkButton(Patient_Picture_Frame, text="Change Picture",width=150, font=("System", 30, "bold"), fg_color="#FF8600", hover_color="#FF3200", command=lambda:self.Change_Patient_Image(idx, LoadImg_Frame,Patient_img,Patientimg_Label))
         rm_Image_Btn.grid(row=1, column=0,pady=20)
         
         
-        scrollable_frame2 = customtkinter.CTkScrollableFrame(edit_window, width=550,height=430)
+        scrollable_frame2 = customtkinter.CTkScrollableFrame(self.Edit_Window, width=550,height=430)
         scrollable_frame2.grid(row=0, column=1, padx=(5, 5), pady=(5, 5))
         scrollable_frame2.grid_columnconfigure(0, weight=1)
         
@@ -457,61 +475,117 @@ class MainGUI:
             PLabel.grid(row=i, column=0, padx=10, pady=(10, 10), sticky='w')
             Patient_Labels.append(PLabel)
         
-        # First_Name_Entry = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="First")
-        # First_Name_Entry.grid(row=0, column=1,pady=10, padx=(0, 5),sticky="ew")
+        self.EdFirst_Name_Entry = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="First")
+        self.EdFirst_Name_Entry.grid(row=0, column=1,pady=10, padx=(0, 5),sticky="ew")
         
-        # Last_Name_Entry = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="Last")
-        # Last_Name_Entry.grid(row=0, column=2, pady=10, padx=(0,5),sticky="ew")
+        self.EdFirst_Name_Entry.insert(0,self.Edit_Patient_Data["name"])
 
-        # Dob_day_Entry = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="DD")
-        # Dob_day_Entry.grid(row=1, column=1,pady=10, padx=(0, 5),sticky="ew")
+        self.EdDob_day_Entry = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="DD")
+        self.EdDob_day_Entry.grid(row=1, column=1,pady=10, padx=(0, 5),sticky="ew")
         
-        # Dob_month_Entry = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="MM")
-        # Dob_month_Entry.grid(row=1, column=2, pady=10, padx=(0,5),sticky="ew")
+        self.EdDob_month_Entry = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="MM")
+        self.EdDob_month_Entry.grid(row=1, column=2, pady=10, padx=(0,5),sticky="ew")
         
-        # Dob_year_Entry = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="YYYY")
-        # Dob_year_Entry.grid(row=1, column=3, pady=10, padx=(0,5),sticky="ew")
+        self.EdDob_year_Entry = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="YYYY")
+        self.EdDob_year_Entry.grid(row=1, column=3, pady=10, padx=(0,5),sticky="ew")
+        
+        dob = self.Edit_Patient_Data["DOB"]
+        date_object = datetime.strptime(dob, "%d/%m/%Y")
+        
+        day = date_object.day
+        month = date_object.month
+        year = date_object.year
+        
+        self.EdDob_day_Entry.insert(0,day)
+        self.EdDob_month_Entry.insert(0,month)
+        self.EdDob_year_Entry.insert(0,year)
 
-        # Gender_Btn = customtkinter.CTkSegmentedButton(self.scrollable_frame2,values=["Male", "Female"])
-        # Gender_Btn.grid(row=2, column=1, padx=(0, 5), pady=(10, 10), sticky="ew")
+        self.EdGender_Btn = customtkinter.CTkSegmentedButton(scrollable_frame2,values=["Male", "Female"])
+        self.EdGender_Btn.grid(row=2, column=1, padx=(0, 5), pady=(10, 10), sticky="ew")
         
-        # country_var = customtkinter.StringVar(value="Select Country")
-        # country_box = customtkinter.CTkComboBox(master=self.scrollable_frame2, variable=self.country_var, values=self.get_countries(),
-        #                                                   width=220, state="readonly")
-        # country_box.grid(row=3, column=1, pady=10, padx=(0,5), sticky="ew")
+        self.EdGender_Btn.set(self.Edit_Patient_Data["gender"])
         
-        # Disease_Entry = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="Infection, Arthritis...")
-        # Disease_Entry.grid(row=4, column=1, pady=10, padx=(0,5),sticky="ew")
+        self.Edcountry_var = customtkinter.StringVar(value="Select Country")
+        self.Edcountry_box = customtkinter.CTkComboBox(master=scrollable_frame2, variable=self.country_var, values=self.get_countries(),
+                                                          width=220, state="readonly")
+        self.Edcountry_box.grid(row=3, column=1, pady=10, padx=(0,5), sticky="ew")
         
-        # Priority_Btn = customtkinter.CTkSegmentedButton(self.scrollable_frame2,values=["High", "Moderate","Low"])
-        # Priority_Btn.grid(row=5, column=1, padx=(0, 5), pady=(10, 10), sticky="ew")
+        self.Edcountry_box.set(self.Edit_Patient_Data["nationality"])
         
-        # Room_Number = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="Unit/Room")
-        # Room_Number.grid(row=6, column=1,pady=10, padx=(0, 5),sticky="ew")
+        self.EdDisease_Entry = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="Infection, Arthritis...")
+        self.EdDisease_Entry.grid(row=4, column=1, pady=10, padx=(0,5),sticky="ew")
         
-        # Medicine = customtkinter.CTkEntry(self.scrollable_frame2, width=70, placeholder_text="Paracetamol, Aspirin...")
-        # Medicine.grid(row=7, column=1, padx=(0, 5), pady=(10, 10), sticky="ew")
+        self.EdDisease_Entry.insert(0,self.Edit_Patient_Data["disease"])
         
-        # Medical_Description_TBOX = customtkinter.CTkTextbox(self.scrollable_frame2, width=240, height=150)
-        # Medical_Description_TBOX.grid(row=8, column=1, padx=(0, 5), pady=(10, 10))
+        self.EdPriority_Btn = customtkinter.CTkSegmentedButton(scrollable_frame2,values=["High", "Moderate","Low"])
+        self.EdPriority_Btn.grid(row=5, column=1, padx=(0, 5), pady=(10, 10), sticky="ew")
         
-        # Load_Image_Btn = customtkinter.CTkButton(self.scrollable_frame2, text="Register",width=200, font=("System", 30, "bold"), fg_color="#628680", command=lambda:self.Store_Patient())
-        # Load_Image_Btn.grid(row=9, column=1,pady=10,padx=(40,0))
+        self.EdPriority_Btn.set(self.Edit_Patient_Data["Priority_Care"])
+        
+        self.EdRoom_Number = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="Unit/Room")
+        self.EdRoom_Number.grid(row=6, column=1,pady=10, padx=(0, 5),sticky="ew")
+        
+        self.EdRoom_Number.insert(0,self.Edit_Patient_Data["room_no"])
 
-    def Apply_Edit(self, idx, name, dob, gender, nationality, room_no, disease, medicines,edit_window):
-        self.Patients_Data_Card_DB[idx]["name"] = name
-        self.Patients_Data_Card_DB[idx]["dob"] = dob
-        self.Patients_Data_Card_DB[idx]["age"] = self.Get_Age_DOB(dob)
-        self.Patients_Data_Card_DB[idx]["gender"] = gender
-        self.Patients_Data_Card_DB[idx]["room_no"] = room_no
-        self.Patients_Data_Card_DB[idx]["disease"] = disease
-        self.Patients_Data_Card_DB[idx]["medicines"] = disease
+        
+        self.EdMedicine = customtkinter.CTkEntry(scrollable_frame2, width=70, placeholder_text="Paracetamol, Aspirin...")
+        self.EdMedicine.grid(row=7, column=1, padx=(0, 5), pady=(10, 10), sticky="ew")
+        
+        self.EdMedicine.insert(0,self.Edit_Patient_Data["medicines"])
+        
+        self.EdMedical_Description_TBOX = customtkinter.CTkTextbox(scrollable_frame2, width=240, height=150)
+        self.EdMedical_Description_TBOX.grid(row=8, column=1, padx=(0, 5), pady=(10, 10))
+        
+        self.EdMedical_Description_TBOX.insert("0.0",self.Edit_Patient_Data["Medical_Desc"])
+
+        self.EdApplyEdits_Btn = customtkinter.CTkButton(scrollable_frame2, text="Apply",width=100, font=("System", 30, "bold"), fg_color="#628680",command=lambda:self.Apply_Edit(idx))
+        self.EdApplyEdits_Btn.grid(row=9, column=1,pady=10,padx=(40,0))
+
+    def Apply_Edit(self, idx): 
+        if self.EdFirst_Name_Entry.get() and self.EdDob_day_Entry.get() and self.EdDob_month_Entry.get() and self.EdDob_year_Entry.get() and self.EdGender_Btn.get() and self.Edcountry_box.get() != "Select Country" and self.EdDisease_Entry.get() and self.EdPriority_Btn.get() and self.EdMedicine.get() and self.EdRoom_Number.get() and self.EdMedical_Description_TBOX.get('0.0','end'):
+        
+            if self.Check_Ints(self.EdDob_day_Entry.get()) and self.Check_Ints(self.EdDob_month_Entry.get()) and self.Check_Ints(self.EdDob_year_Entry.get()):
+                # AskDup = self.check_for_duplicate(self.Edit_Patient_Data)
+                AskDup = False
+                # AskDupRoom = self.check_for_DupRoom(self.Edit_Patient_Data)
+                AskDupRoom = False
+                if not AskDup:
+                    if not AskDupRoom:
+                        messagebox.showinfo("Updated Patient Details", f"Patient '{self.Edit_Patient_Data['name']}' Updated, Please Refresh")
+                        
+                        nid=self.Patients_Data_Card_DB[idx]["_id"]
+                        Name = self.EdFirst_Name_Entry.get()
+                        dob = self.EdDob_day_Entry.get() + '/' + self.EdDob_month_Entry.get() + '/' + self.EdDob_year_Entry.get()
+                        Age = self.Get_Age_DOB(dob)
+                        gender = self.EdGender_Btn.get()
+                        nationality = self.Edcountry_box.get()
+                        room_num = self.EdRoom_Number.get()
+                        disease = self.EdDisease_Entry.get()
+                        medlist = [obj.strip() for obj in self.EdMedicine.get().split(' ')]
+                        Priority_Care = self.EdPriority_Btn.get()
+                        Medical_Desc = self.EdMedical_Description_TBOX.get('0.0','end')
+                        file_name = self.Edit_Patient_Data["image_path"]
+                        self.EDimage_path = None
+                        self.Edit_Patient_Data = {"_id":nid,"name":Name,"DOB":dob, "age":Age ,"gender": gender,"nationality":nationality,"room_no": room_num, "disease": disease, "medicines": medlist ,"Priority_Care":Priority_Care,"Medical_Desc": Medical_Desc,"image_path": file_name,"image_data":"None"}
+
+                        print("\nBefore: ", self.Patients_Data_Card_DB[idx])
+                        print("\nTBG: ", self.Edit_Patient_Data)
+
+                        original_patient = self.Patients_Data_Card_DB[idx]
+                        pid = str(self.Patients_Data_Card_DB[idx]["_id"])
+                        for key, value in self.Edit_Patient_Data.items():
+                            if key in original_patient and original_patient[key] != value:
+                                original_patient[key] = value
+                                self.Patient_DB.update_patient_by_id(pid,set_fields={key:value})
+                             
+                                
+                        print("\nAfter: ", self.Patients_Data_Card_DB[idx])
 
 
         self.Patient_Frames_List.clear()
         self.Apply_Patient_Profiles()
 
-        edit_window.destroy()
+        self.Edit_Window.destroy()
 
     def Delete_Patient(self, idx,name):
         if messagebox.askyesno("Remove Patient Card", "Are you sure you want to remove this patient?"):
@@ -535,10 +609,15 @@ class MainGUI:
         #     self.Apply_Patient_Profiles()
             
     def Show_Patient_Info(self, idx):
-        Info_Window = customtkinter.CTkToplevel(Main, width=800, height=500)
+        try:
+            self.Info_Window.destroy()
+        except:
+            pass
+        
+        self.Info_Window = customtkinter.CTkToplevel(Main, width=800, height=500)
         patient_data = self.Patients_Data_Card_DB[idx]
 
-        patient_frame = customtkinter.CTkFrame(Info_Window, corner_radius=20, fg_color="#628680", border_width=5, border_color="black",width=250, height=300)
+        patient_frame = customtkinter.CTkFrame(self.Info_Window, corner_radius=20, fg_color="#628680", border_width=5, border_color="black",width=250, height=300)
         patient_frame.grid(row=0, column=0, padx=10, pady=15)
 
         image_path = os.path.join(self.current_path, f"Database/Patients/{patient_data['image_path']}")
@@ -548,38 +627,38 @@ class MainGUI:
         self.patient_image_label.grid(row=0, column=0, padx=10, pady=(20, 20))
         
         for i in range(10):
-            PLabel = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Long_Infolist[i]}",text_color = "white", font=("System", 20, "bold"))
+            PLabel = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Long_Infolist[i]}",text_color = "white", font=("System", 20, "bold"))
             PLabel.grid(row=i+1, column=0, padx=10, pady=(10, 10), sticky='w')
             
             
-        NameLabel = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['name']}",text_color = "white", font=("System", 20, "bold"))
+        NameLabel = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['name']}",text_color = "white", font=("System", 20, "bold"))
         NameLabel.grid(row=1, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        dob_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['DOB']}",text_color = "white", font=("System", 20, "bold"))
+        dob_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['DOB']}",text_color = "white", font=("System", 20, "bold"))
         dob_label.grid(row=2, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        age_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['age']}",text_color = "white", font=("System", 20, "bold"))
+        age_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['age']}",text_color = "white", font=("System", 20, "bold"))
         age_label.grid(row=3, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        gender_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['gender']}",text_color = "white", font=("System", 20, "bold"))
+        gender_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['gender']}",text_color = "white", font=("System", 20, "bold"))
         gender_label.grid(row=4, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        nationality_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['nationality']}",text_color = "white", font=("System", 20, "bold"))
+        nationality_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['nationality']}",text_color = "white", font=("System", 20, "bold"))
         nationality_label.grid(row=5, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        room_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['room_no']}",text_color = "white", font=("System", 20, "bold"))
+        room_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['room_no']}",text_color = "white", font=("System", 20, "bold"))
         room_label.grid(row=6, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        disease_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['disease']}",text_color = "white", font=("System", 20, "bold"))
+        disease_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['disease']}",text_color = "white", font=("System", 20, "bold"))
         disease_label.grid(row=7, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        priority_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['Priority_Care']}",text_color = "white", font=("System", 20, "bold"))
+        priority_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['Priority_Care']}",text_color = "white", font=("System", 20, "bold"))
         priority_label.grid(row=8, column=1, padx=10, pady=(10, 10), sticky='w')
         
-        medicine_label = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['medicines']}",text_color = "white", font=("System", 20, "bold"))
+        medicine_label = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['medicines']}",text_color = "white", font=("System", 20, "bold"))
         medicine_label.grid(row=9, column=1, padx=10, pady=(10, 10), sticky='w')
 
-        medical_desLabel = customtkinter.CTkLabel(master=Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['Medical_Desc']}",text_color = "white", font=("System", 20, "bold"))
+        medical_desLabel = customtkinter.CTkLabel(master=self.Info_Window, text=f"{self.Patients_Data_Card_DB[idx]['Medical_Desc']}",text_color = "white", font=("System", 20, "bold"))
         medical_desLabel.grid(row=10, column=1, padx=10, pady=(10, 10), sticky='w')
         
 
@@ -678,7 +757,8 @@ class MainGUI:
                 print("Gesture Stat: ", self.Gesture_Stat)
 
                 
-
+                self.TakenMeds = self.MediTUIO.QRcode_detector(Frame)
+                print("Meds Stat: ", self.TakenMeds)
                 
                 cv2.putText(Frame, f"Status: {self.Sleep_Stat,self.Eating_Stat,self.Fall_Stat,self.Gesture_Stat,self.Expression}", (20, 30), cv2.FONT_HERSHEY_PLAIN, 1.0, (255, 0, 0), 2)
                 if self.Get_Soft_Stat.Sleep.Start_Time:
@@ -693,16 +773,15 @@ class MainGUI:
                 
       
                 try:
-                    self.patient1_stat = customtkinter.CTkLabel(self.Patient_Frames_List[0], text=f"Status: {self.Sleep_Stat, self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nMood: {self.Expression}\nEmergency: {self.Fall_Stat}", text_color="white", font=("System", 10, "bold"))
-                    self.patient1_stat.grid(row=2, column=0, padx=10, pady=(20, 20))
-
                     if self.Fall_Stat == "Safe":
-                        self.patient1_stat = customtkinter.configure(self.Patient_Frames_List[0], text=f"Status: {self.Sleep_Stat, self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nMood: {self.Expression}\nEmergency: {self.Fall_Stat}", text_color="white", font=("System", 10, "bold"))
+                        self.patient1_stat = customtkinter.configure(self.Patient_Frames_List[0], text=f"Status: {self.Sleep_Stat, self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nMood: {self.Expression}\nMeds Stat: {self.TakenMeds}\nEmergency: {self.Fall_Stat}", text_color="white", font=("System", 10, "bold"))
                         self.patient1_stat.grid(row=2, column=0, padx=10, pady=(20, 20))
                     elif self.Fall_Stat == "Fall":
-                        self.patient1_stat = customtkinter.CTkLabel(self.Patient_Frames_List[0], text=f"Status: {self.Sleep_Stat, self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nMood: {self.Expression}\nEmergency: {self.Fall_Stat}", fg_color="red", font=("System", 10, "bold"))
+                        self.patient1_stat = customtkinter.CTkLabel(self.Patient_Frames_List[0], text=f"Status: {self.Sleep_Stat, self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nMood: {self.Expression}\nMeds Stat: {self.TakenMeds}\nEmergency: {self.Fall_Stat}", fg_color="red", font=("System", 10, "bold"))
                         self.patient1_stat.grid(row=2, column=0, padx=10, pady=(20, 20))
                 except Exception as e:
+                    self.patient1_stat = customtkinter.CTkLabel(self.Patient_Frames_List[0], text=f"Status: {self.Sleep_Stat, self.Eating_Stat}\nRequest: {self.Gesture_Stat}\nMood: {self.Expression}\nMeds Stat: {self.TakenMeds}\nEmergency: {self.Fall_Stat}", text_color="white", font=("System", 10, "bold"))
+                    self.patient1_stat.grid(row=2, column=0, padx=10, pady=(20, 20))
                     print(f"Error In Stat")
 
                     
@@ -830,7 +909,7 @@ gui_thread = threading.Thread(target=gui.Main_Screen)
 cam_thread = threading.Thread(target=camera_thread)
 
 gui_thread.start()
-# cam_thread.start()
+cam_thread.start()
 
 
 Main.mainloop()
