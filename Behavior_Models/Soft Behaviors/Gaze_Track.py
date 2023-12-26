@@ -10,6 +10,10 @@ import os
 class Gaze_Tracking:
     def __init__(self, Path = ""):
         self.Path = Path
+        self.Average_Eye_X = 0
+        self.Average_Eye_Y = 0
+        self.Left_Center = 0
+        self.Right_Center = 0
 
         self.Script_Directory = os.path.dirname(os.path.abspath(__file__))
         CSV_Filename = "Gaze_Data.csv"
@@ -67,6 +71,7 @@ class Gaze_Tracking:
 
         self.Height, self.Width, self.Channels = self.Frame.shape
 
+        
         if self.Results.multi_face_landmarks:
             for self.Face_Land_Marks in self.Results.multi_face_landmarks:
 
@@ -81,3 +86,6 @@ class Gaze_Tracking:
 
                 self.Left_Center = np.array([self.Left_x, self.Left_y], dtype = np.int32)
                 self.Right_Center = np.array([self.Right_x, self.Right_y], dtype = np.int32)
+        else:
+            self.Average_Eye_X
+            self.Average_Eye_Y 

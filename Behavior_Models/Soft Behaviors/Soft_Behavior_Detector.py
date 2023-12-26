@@ -35,9 +35,9 @@ class Soft_Behavior_Detector:
             self.Eye_Y_Frame_Coordinate = self.Gaze_Tracking.Right_Center
 
         else:
-            self.Flag_Eating = "None"
-            self.Expression_Status = "None"
-            self.Eye_X = "None"
-            self.Eye_Y = "None"
-            self.Eye_X_Frame_Coordinate = "None"
-            self.Eye_Y_Frame_Coordinate = "None"
+            self.Flag_Eating = None
+            self.Expression_Status = None
+            self.Eye_X = None
+            self.Eye_Y = None
+            self.Eye_X_Frame_Coordinate = None
+            self.Eye_Y_Frame_Coordinate = None
