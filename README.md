@@ -1,4 +1,4 @@
-# Patient-See
+# Medi-Watch
 An automated patient monitoring system, actively notifying caretakers and nurses to tend to the patients based on detected behaviors.
 
 # UI look
